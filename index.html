@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ms" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistem Asrama KPTM Bangi</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="top-bar"></div>
+<div class="controls-bar">
+  <div class="controls-left"><div class="ctrl-btn">
+    <button class="btn-pill active" id="l-bm">BM</button><button class="btn-pill" id="l-en">EN</button>
+  </div></div>
+  <div class="controls-right"><div class="ctrl-btn">
+    <button class="btn-pill active" id="t-light">☀</button><button class="btn-pill" id="t-dark">🌙</button>
+  </div></div>
+</div>
+
+<div class="header-banner">
+  <img class="banner-img" src="IMG_2610.jpeg" alt="KPTM Bangi">
+  <div class="banner-overlay"></div>
+  <div class="banner-content">
+    <img class="banner-logo" src="IMG_2608.png" alt="Logo KPTM">
+    <div class="banner-center">
+      <div class="banner-badge" data-t="badge"></div>
+      <div class="banner-title" data-t="title"></div>
+      <div class="banner-sub" data-t="sub"></div>
+    </div>
+    <img class="banner-logo" src="IMG_2607.jpeg" alt="Logo MPP">
+  </div>
+</div>
+<div class="red-divider"></div>
+
+<div class="wrap">
+  <div class="card" id="form-card">
+    <div class="tabs">
+      <button class="btn-pill active" id="m-pelajar" data-t="student"></button>
+      <button class="btn-pill" id="m-warden" data-t="warden"></button>
+    </div>
+    <div class="tabs" id="subtabs">
+      <button class="btn-pill active" id="s-login" data-t="login"></button>
+      <button class="btn-pill" id="s-daftar" data-t="register"></button>
+    </div>
+    <form id="form" autocomplete="on">
+      <label id="lb-id" for="f-id"></label>
+      <input id="f-id" required autocapitalize="off" autocomplete="username">
+      <label for="f-pw" data-t="password"></label>
+      <input id="f-pw" type="password" required minlength="6" autocomplete="current-password">
+      <div id="pw2-box" hidden>
+        <label for="f-pw2" data-t="confirm"></label>
+        <input id="f-pw2" type="password" autocomplete="new-password">
+      </div>
+      <button class="btn" id="submit" type="submit"></button>
+      <div class="msg" id="msg" role="alert"></div>
+    </form>
+    <div class="note" id="note"></div>
+  </div>
+
+  <div class="card" id="status-card" hidden>
+    <p class="banner-sub" style="color:var(--text-muted)" data-t="loggedIn"></p>
+    <h2 id="who" style="margin:8px 0 4px"></h2>
+    <button class="btn ghost" id="logout" data-t="logout"></button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const T = {
+  bm: {badge:'KPTM BANGI · SISTEM ASRAMA', title:'Sistem Asrama', sub:'Kolej Poly-Tech MARA Bangi · Permohonan Keluar Asrama',
+    student:'Pelajar', warden:'Warden', login:'Log masuk', register:'Daftar kali pertama',
+    idStudent:'No. matrik', idWarden:'Emel warden', password:'Kata laluan', confirm:'Sahkan kata laluan',
+    submitLogin:'Log masuk', submitReg:'Daftar dan log masuk', logout:'Log keluar', loggedIn:'Berjaya log masuk sebagai',
+    noteReg:'Kali pertama? Guna no. matrik dari senarai asrama dan pilih kata laluan sendiri.',
+    badLogin:'No. matrik/emel atau kata laluan salah.', mismatch:'Kata laluan tidak sama.',
+    notListed:'No. matrik tiada dalam senarai asrama, atau sudah didaftar. Hubungi warden.',
+    noRole:'Akaun ini belum diberi peranan. Hubungi warden.'},
+  en: {badge:'KPTM BANGI · HOSTEL SYSTEM', title:'Hostel System', sub:'Kolej Poly-Tech MARA Bangi · Hostel Exit Requests',
+    student:'Student', warden:'Warden', login:'Log in', register:'First-time sign up',
+    idStudent:'Matric no.', idWarden:'Warden email', password:'Password', confirm:'Confirm password',
+    submitLogin:'Log in', submitReg:'Sign up and log in', logout:'Log out', loggedIn:'Logged in as',
+    noteReg:'First time? Use your matric no. from the hostel list and choose your own password.',
+    badLogin:'Wrong matric no./email or password.', mismatch:'Passwords do not match.',
+    notListed:'Matric no. is not on the hostel list, or is already registered. Contact the warden.',
+    noRole:'This account has no role yet. Contact the warden.'}
+};
+let lang = 'bm', mode = 'pelajar', sub = 'login';
+const t = k => T[lang][k];
+const setActive = (a, b, on) => { $(a).classList.toggle('active', on); $(b).classList.toggle('active', !on); };
+
+function render() {
+  document.documentElement.lang = lang === 'bm' ? 'ms' : 'en';
+  document.querySelectorAll('[data-t]').forEach(e => e.textContent = t(e.dataset.t));
+  const stu = mode === 'pelajar', reg = stu && sub === 'daftar';
+  $('lb-id').textContent = stu ? t('idStudent') : t('idWarden');
+  $('f-id').type = stu ? 'text' : 'email';
+  $('subtabs').hidden = !stu;
+  $('pw2-box').hidden = !reg; $('f-pw2').required = reg;
+  $('f-pw').autocomplete = reg ? 'new-password' : 'current-password';
+  $('submit').textContent = reg ? t('submitReg') : t('submitLogin');
+  $('note').textContent = reg ? t('noteReg') : '';
+  setActive('l-bm', 'l-en', lang === 'bm'); setActive('m-pelajar', 'm-warden', stu); setActive('s-login', 's-daftar', sub === 'login');
+}
+const msg = s => { $('msg').textContent = s || ''; };
+$('l-bm').onclick = () => { lang = 'bm'; render(); }; $('l-en').onclick = () => { lang = 'en'; render(); };
+$('m-pelajar').onclick = () => { mode = 'pelajar'; msg(); render(); }; $('m-warden').onclick = () => { mode = 'warden'; msg(); render(); };
+$('s-login').onclick = () => { sub = 'login'; msg(); render(); }; $('s-daftar').onclick = () => { sub = 'daftar'; msg(); render(); };
+function setTheme(d) {
+  document.documentElement.dataset.theme = d ? 'dark' : 'light'; setActive('t-dark', 't-light', d);
+  try { localStorage.setItem('asrama-theme', d ? 'dark' : 'light'); } catch (e) {}
+}
+$('t-light').onclick = () => setTheme(false); $('t-dark').onclick = () => setTheme(true);
+try { setTheme(localStorage.getItem('asrama-theme') === 'dark'); } catch (e) {}
+
+async function afterLogin() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return;
+  const { data: p } = await sb.from('profiles').select('role,full_name').eq('id', user.id).maybeSingle();
+  if (!p) { await sb.auth.signOut(); return msg(t('noRole')); }
+  if (PAGES[p.role]) { location.href = PAGES[p.role]; return; }
+  $('form-card').hidden = true; $('status-card').hidden = false;
+  $('who').textContent = (p.full_name || user.email) + ' (' + p.role + ')';
+}
+$('form').onsubmit = async e => {
+  e.preventDefault(); msg(); $('submit').disabled = true;
+  try {
+    const id = $('f-id').value.trim(), pw = $('f-pw').value, stu = mode === 'pelajar';
+    const email = stu ? id.toLowerCase().replace(/\s+/g, '') + '@' + EMAIL_DOMAIN : id;
+    if (stu && sub === 'daftar') {
+      if (pw !== $('f-pw2').value) return msg(t('mismatch'));
+      const { error } = await sb.auth.signUp({ email, password: pw });
+      if (error) return msg(/database|saving/i.test(error.message) ? t('notListed') : error.message);
+    }
+    const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+    if (error) return msg(t('badLogin'));
+    await afterLogin();
+  } finally { $('submit').disabled = false; }
+};
+$('logout').onclick = async () => { await sb.auth.signOut(); $('status-card').hidden = true; $('form-card').hidden = false; };
+sb.auth.getSession().then(({ data }) => { if (data.session) afterLogin(); });
+render();
+</script>
+</body>
+</html>
