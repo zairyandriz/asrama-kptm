@@ -4,4 +4,4 @@ const SUPABASE_URL = 'https://ipvqgdhqxsxrveazuqix.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_G_B7wigtbAZGor0efeVoHQ_L6LxHxtf';
 const EMAIL_DOMAIN = 'asrama.kptm.local'; // mesti sama dengan SQL
 // Halaman selepas login (diisi bila portal siap). Kosong = papar status sahaja.
-const PAGES = { pelajar: '', warden: '' };
+const PAGES = { pelajar: 'pelajar.html', warden: '' };
