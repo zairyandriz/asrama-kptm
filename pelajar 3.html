@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ms" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="/asrama-kptm/">
+<title>Portal Pelajar - Sistem Asrama KPTM Bangi</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pelajar.css">
+</head>
+<body>
+<div class="top-bar"></div>
+<div class="header-banner">
+  <img class="banner-img" src="IMG_2610.jpeg" alt="KPTM Bangi">
+  <div class="banner-overlay"></div>
+  <div class="banner-content">
+    <img class="banner-logo" src="IMG_2608.png" alt="Logo KPTM">
+    <div class="banner-mid">
+      <div class="banner-title">Portal Pelajar</div>
+      <div class="banner-sub" id="who-name">Sistem Asrama KPTM Bangi</div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="logout">Log keluar</button>
+    </div>
+  </div>
+</div>
+<div class="red-divider"></div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Borang Permohonan Keluar</h2>
+    <form id="form">
+      <label for="f-type">Jenis permohonan</label>
+      <select id="f-type" required>
+        <option value="">Pilih jenis</option>
+        <option value="balik_rumah">Balik rumah</option>
+        <option value="bermalam_luar">Bermalam luar</option>
+        <option value="keluar_sekejap">Keluar sekejap</option>
+        <option value="kecemasan">Kecemasan</option>
+      </select>
+      <div class="row2">
+        <div>
+          <label for="f-depart">Tarikh &amp; masa keluar</label>
+          <input type="datetime-local" id="f-depart" required>
+        </div>
+        <div>
+          <label for="f-return">Tarikh &amp; masa masuk</label>
+          <input type="datetime-local" id="f-return" required>
+        </div>
+      </div>
+      <label for="f-dest">Destinasi</label>
+      <input type="text" id="f-dest" placeholder="Contoh: Rumah, Bangi" required>
+      <label for="f-reason">Sebab</label>
+      <textarea id="f-reason" required placeholder="Nyatakan sebab permohonan"></textarea>
+      <button class="btn" id="submit" type="submit">Hantar Permohonan</button>
+      <div class="msg" id="form-msg"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Sejarah Permohonan</h2>
+    <div id="list"><div class="empty">Memuatkan...</div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const TYPE_LABEL = {balik_rumah:'Balik Rumah', bermalam_luar:'Bermalam Luar', keluar_sekejap:'Keluar Sekejap', kecemasan:'Kecemasan'};
+const STATUS_LABEL = {pending:'Menunggu', lulus:'Diluluskan', tolak:'Ditolak', batal:'Dibatalkan', selesai:'Selesai'};
+const fmt = d => new Date(d).toLocaleString('ms-MY', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+
+let studentId = null;
+
+async function boot() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) { location.href = 'index.html'; return; }
+  const { data: profile } = await sb.from('profiles').select('role, full_name').eq('id', user.id).maybeSingle();
+  if (!profile || profile.role !== 'pelajar') { location.href = 'index.html'; return; }
+  $('who-name').textContent = profile.full_name || 'Portal Pelajar';
+
+  const { data: sid, error } = await sb.rpc('my_student_id');
+  if (error || !sid) { $('list').innerHTML = '<div class="empty">Ralat memuat data pelajar. Hubungi warden.</div>'; return; }
+  studentId = sid;
+  await loadRequests();
+}
+
+async function loadRequests() {
+  const { data, error } = await sb.from('requests').select('*').eq('student_id', studentId).order('created_at', { ascending: false });
+  const box = $('list');
+  if (error) { box.innerHTML = '<div class="empty">Gagal memuat sejarah.</div>'; return; }
+  if (!data || data.length === 0) { box.innerHTML = '<div class="empty">Tiada permohonan lagi.</div>'; return; }
+  box.innerHTML = data.map(r => `
+    <div class="req">
+      <div class="req-top">
+        <div>
+          <div class="req-type">${TYPE_LABEL[r.type] || r.type}</div>
+          <div class="req-dates">${fmt(r.depart_at)} &rarr; ${fmt(r.return_at)}</div>
+        </div>
+        <span class="badge ${r.status}">${STATUS_LABEL[r.status] || r.status}</span>
+      </div>
+      <div class="req-dest">📍 ${escapeHtml(r.destination)}</div>
+      <div class="req-dest" style="color:var(--text-muted)">${escapeHtml(r.reason)}</div>
+      ${r.status === 'tolak' && r.reject_reason ? `<div class="reject-note">Sebab ditolak: ${escapeHtml(r.reject_reason)}</div>` : ''}
+      ${r.status === 'pending' ? `<button class="cancel-btn" data-id="${r.id}">Batalkan</button>` : ''}
+    </div>
+  `).join('');
+  box.querySelectorAll('.cancel-btn').forEach(b => b.onclick = () => cancelRequest(b.dataset.id));
+}
+function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function cancelRequest(id) {
+  if (!confirm('Batalkan permohonan ini?')) return;
+  const { error } = await sb.from('requests').update({ status: 'batal' }).eq('id', id);
+  if (error) alert('Gagal membatalkan: ' + error.message);
+  await loadRequests();
+}
+
+$('form').onsubmit = async e => {
+  e.preventDefault();
+  const msg = $('form-msg'); msg.textContent = ''; msg.className = 'msg';
+  const depart = $('f-depart').value, ret = $('f-return').value;
+  if (new Date(ret) <= new Date(depart)) {
+    msg.textContent = 'Tarikh masuk mesti selepas tarikh keluar.'; msg.className = 'msg err'; return;
+  }
+  $('submit').disabled = true;
+  try {
+    const { error } = await sb.from('requests').insert({
+      student_id: studentId,
+      type: $('f-type').value,
+      depart_at: new Date(depart).toISOString(),
+      return_at: new Date(ret).toISOString(),
+      destination: $('f-dest').value.trim(),
+      reason: $('f-reason').value.trim()
+    });
+    if (error) { msg.textContent = 'Gagal hantar: ' + error.message; msg.className = 'msg err'; return; }
+    msg.textContent = 'Permohonan berjaya dihantar.'; msg.className = 'msg ok';
+    $('form').reset();
+    await loadRequests();
+  } finally { $('submit').disabled = false; }
+};
+
+$('logout').onclick = async () => { await sb.auth.signOut(); location.href = 'index.html'; };
+boot();
+</script>
+</body>
+</html>
