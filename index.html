@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ms" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="/asrama-kptm/">
+<title>Sistem Asrama KPTM Bangi</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="top-bar"></div>
+<div class="controls-bar">
+  <div class="controls-left"><div class="ctrl-btn">
+    <button class="btn-pill active" id="l-bm">BM</button><button class="btn-pill" id="l-en">EN</button>
+  </div></div>
+  <div class="controls-right"><div class="ctrl-btn">
+    <button class="btn-pill active" id="t-light">☀</button><button class="btn-pill" id="t-dark">🌙</button>
+  </div></div>
+</div>
+
+<div class="header-banner">
+  <img class="banner-img" src="IMG_2610.jpeg" alt="KPTM Bangi">
+  <div class="banner-overlay"></div>
+  <div class="banner-content">
+    <img class="banner-logo" src="IMG_2608.png" alt="Logo KPTM">
+    <div class="banner-center">
+      <div class="banner-badge" data-t="badge"></div>
+      <div class="banner-title" data-t="title"></div>
+      <div class="banner-sub" data-t="sub"></div>
+    </div>
+    <img class="banner-logo" src="IMG_2607.jpeg" alt="Logo MPP">
+  </div>
+</div>
+<div class="red-divider"></div>
+
+<div class="wrap">
+
+  <!-- Pilihan utama -->
+  <div class="main-card" id="landing">
+    <div class="emoji">🏠</div>
+    <h1 data-t="h1"></h1>
+    <p data-t="p1"></p>
+    <button class="big-btn" id="open-form" data-t="openForm"></button>
+  </div>
+
+  <!-- Borang permohonan -->
+  <div class="card" id="form-card" hidden>
+    <span class="back-link" id="back-link" data-t="back"></span>
+    <h2 data-t="formTitle"></h2>
+    <form id="form">
+      <label for="f-name" data-t="lblName"></label>
+      <input type="text" id="f-name" required>
+      <div class="row2">
+        <div>
+          <label for="f-matric" data-t="lblMatric"></label>
+          <input type="text" id="f-matric" required>
+        </div>
+        <div>
+          <label for="f-room" data-t="lblRoom"></label>
+          <input type="text" id="f-room" required placeholder="A-101">
+        </div>
+      </div>
+      <label for="f-type" data-t="lblType"></label>
+      <select id="f-type" required>
+        <option value="" data-t="optChoose"></option>
+        <option value="balik_rumah" data-t="optBalik"></option>
+        <option value="bermalam_luar" data-t="optBermalam"></option>
+        <option value="keluar_sekejap" data-t="optSekejap"></option>
+        <option value="kecemasan" data-t="optKecemasan"></option>
+      </select>
+      <div class="row2">
+        <div>
+          <label for="f-depart" data-t="lblDepart"></label>
+          <input type="datetime-local" id="f-depart" required>
+        </div>
+        <div>
+          <label for="f-return" data-t="lblReturn"></label>
+          <input type="datetime-local" id="f-return" required>
+        </div>
+      </div>
+      <label for="f-dest" data-t="lblDest"></label>
+      <input type="text" id="f-dest" required>
+      <label for="f-reason" data-t="lblReason"></label>
+      <textarea id="f-reason" required></textarea>
+      <button class="btn" id="submit" type="submit" data-t="submitBtn"></button>
+      <div class="msg" id="form-msg"></div>
+    </form>
+  </div>
+
+  <!-- Login warden -->
+  <div class="warden-box">
+    <button class="warden-toggle" id="warden-toggle">🔒 <span data-t="wardenLink"></span></button>
+    <div class="warden-form" id="warden-form">
+      <form id="warden-login-form">
+        <input type="email" id="w-email" placeholder="Emel warden" required autocomplete="username">
+        <input type="password" id="w-pw" placeholder="Kata laluan" required autocomplete="current-password">
+        <button class="btn" type="submit" data-t="wardenBtn"></button>
+        <div class="msg err" id="warden-msg"></div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const T = {
+  bm: {badge:'KPTM BANGI · SISTEM ASRAMA', title:'Sistem Asrama', sub:'Kolej Poly-Tech MARA Bangi · Permohonan Keluar Asrama',
+    h1:'Permohonan Keluar Asrama', p1:'Nak balik rumah atau bermalam di luar? Isi borang ringkas di bawah.',
+    openForm:'Mohon Keluar Asrama', back:'← Kembali', formTitle:'Borang Permohonan Keluar',
+    lblName:'Nama penuh', lblMatric:'No. matrik', lblRoom:'No. bilik', lblType:'Jenis permohonan',
+    optChoose:'Pilih jenis', optBalik:'Balik rumah', optBermalam:'Bermalam luar', optSekejap:'Keluar sekejap', optKecemasan:'Kecemasan',
+    lblDepart:'Tarikh & masa keluar', lblReturn:'Tarikh & masa masuk', lblDest:'Destinasi', lblReason:'Sebab',
+    submitBtn:'Hantar Permohonan', wardenLink:'Log Masuk Warden', wardenBtn:'Log masuk',
+    sentOk:'Permohonan berjaya dihantar. Sila tunggu kelulusan warden.', dateErr:'Tarikh masuk mesti selepas tarikh keluar.',
+    sendErr:'Gagal hantar: ', loginErr:'Emel atau kata laluan salah.', noRole:'Akaun ini bukan akaun warden.'},
+  en: {badge:'KPTM BANGI · HOSTEL SYSTEM', title:'Hostel System', sub:'Kolej Poly-Tech MARA Bangi · Hostel Exit Requests',
+    h1:'Hostel Exit Request', p1:'Going home or staying out overnight? Fill in the short form below.',
+    openForm:'Request to Leave', back:'← Back', formTitle:'Exit Request Form',
+    lblName:'Full name', lblMatric:'Matric no.', lblRoom:'Room no.', lblType:'Request type',
+    optChoose:'Choose type', optBalik:'Going home', optBermalam:'Staying out overnight', optSekejap:'Short outing', optKecemasan:'Emergency',
+    lblDepart:'Departure date & time', lblReturn:'Return date & time', lblDest:'Destination', lblReason:'Reason',
+    submitBtn:'Submit Request', wardenLink:'Warden Login', wardenBtn:'Log in',
+    sentOk:'Request submitted successfully. Please wait for warden approval.', dateErr:'Return date must be after departure date.',
+    sendErr:'Failed to submit: ', loginErr:'Wrong email or password.', noRole:'This account is not a warden account.'}
+};
+let lang = 'bm';
+const t = k => T[lang][k];
+function render() {
+  document.documentElement.lang = lang === 'bm' ? 'ms' : 'en';
+  document.querySelectorAll('[data-t]').forEach(e => e.textContent = t(e.dataset.t));
+  $('l-bm').classList.toggle('active', lang === 'bm'); $('l-en').classList.toggle('active', lang === 'en');
+}
+$('l-bm').onclick = () => { lang = 'bm'; render(); }; $('l-en').onclick = () => { lang = 'en'; render(); };
+function setTheme(d) {
+  document.documentElement.dataset.theme = d ? 'dark' : 'light';
+  $('t-dark').classList.toggle('active', d); $('t-light').classList.toggle('active', !d);
+  try { localStorage.setItem('asrama-theme', d ? 'dark' : 'light'); } catch (e) {}
+}
+$('t-light').onclick = () => setTheme(false); $('t-dark').onclick = () => setTheme(true);
+try { setTheme(localStorage.getItem('asrama-theme') === 'dark'); } catch (e) {}
+render();
+
+$('open-form').onclick = () => { $('landing').hidden = true; $('form-card').hidden = false; };
+$('back-link').onclick = () => { $('form-card').hidden = true; $('landing').hidden = false; };
+
+$('form').onsubmit = async e => {
+  e.preventDefault();
+  const msg = $('form-msg'); msg.textContent = ''; msg.className = 'msg';
+  const depart = $('f-depart').value, ret = $('f-return').value;
+  if (new Date(ret) <= new Date(depart)) { msg.textContent = t('dateErr'); msg.className = 'msg err'; return; }
+  $('submit').disabled = true;
+  try {
+    const { error } = await sb.from('requests').insert({
+      student_name: $('f-name').value.trim(),
+      matric_no: $('f-matric').value.trim(),
+      room_no: $('f-room').value.trim(),
+      type: $('f-type').value,
+      depart_at: new Date(depart).toISOString(),
+      return_at: new Date(ret).toISOString(),
+      destination: $('f-dest').value.trim(),
+      reason: $('f-reason').value.trim()
+    });
+    if (error) { msg.textContent = t('sendErr') + error.message; msg.className = 'msg err'; return; }
+    msg.textContent = t('sentOk'); msg.className = 'msg ok';
+    $('form').reset();
+    setTimeout(() => { $('form-card').hidden = true; $('landing').hidden = false; msg.textContent = ''; }, 2500);
+  } finally { $('submit').disabled = false; }
+};
+
+$('warden-toggle').onclick = () => $('warden-form').classList.toggle('open');
+$('warden-login-form').onsubmit = async e => {
+  e.preventDefault();
+  const msg = $('warden-msg'); msg.textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email: $('w-email').value.trim(), password: $('w-pw').value });
+  if (error) { msg.textContent = t('loginErr'); return; }
+  const { data: profile } = await sb.from('profiles').select('role').eq('id', data.user.id).maybeSingle();
+  if (!profile || profile.role !== 'warden') { msg.textContent = t('noRole'); await sb.auth.signOut(); return; }
+  location.href = 'warden.html';
+};
+
+// Kalau warden dah login sebelum ni, terus bawa ke dashboard
+sb.auth.getSession().then(async ({ data }) => {
+  if (!data.session) return;
+  const { data: profile } = await sb.from('profiles').select('role').eq('id', data.session.user.id).maybeSingle();
+  if (profile && profile.role === 'warden') location.href = 'warden.html';
+});
+</script>
+</body>
+</html>
